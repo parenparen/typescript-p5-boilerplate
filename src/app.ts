@@ -7,25 +7,46 @@ const drawSphere = (
   {r = 120, detail = 90, color = p.color("black")} : 
   {r?: number, detail?: number, color?: p5.Color} = {}) => {
 
-  const maxAngleLat = Math.PI;
-  const maxAngleLon = Math.PI / 2;
-  const radInc = maxAngleLat / detail;
-  const radIncLon = maxAngleLon / detail;
+  const maxAngleLat = 2 * Math.PI,
+    maxAngleLon = 2 * Math.PI,
+    radInc = maxAngleLat / detail,
+    radIncLon = maxAngleLon / detail;
 
   p.noStroke();
-  p.fill(color);
 
   p.push();
 
   for(let aLon = 0; aLon < maxAngleLon; aLon += radIncLon) {
     for(let aLat = 0; aLat < maxAngleLat; aLat += radInc) {
-      const projectedRadius = Math.cos(aLon) * r;
+      const projectedRadius = Math.cos(aLon) * r,
+        x = Math.cos(aLat) * projectedRadius, 
+        y = Math.sin(aLat) * projectedRadius,
+        z = Math.sin(aLon) * r;
+
+      const noiseParamDenom = 50;
+      const alphaNoiseParamDenom = 5;
+      const translationNoise = -25 + 
+        p.noise(
+          x / noiseParamDenom, 
+          y / noiseParamDenom, 
+          z / noiseParamDenom)
+        * 50;
+      const alphaNoise = -2 + 
+        p.noise(
+          x / alphaNoiseParamDenom, 
+          y / alphaNoiseParamDenom, 
+          z / alphaNoiseParamDenom)
+        * 4;
+
+      color.setAlpha(4 + alphaNoise);
+      p.fill(color);
+
       p.push();
       p.translate(
-        Math.cos(aLat) * projectedRadius, 
-        Math.sin(aLat) * projectedRadius,
-        Math.sin(aLon) * r);
-      p.sphere(5);
+        x + translationNoise, 
+        y + translationNoise, 
+        z + translationNoise);
+      p.sphere(1, 5);
       p.pop();
     }
   }
@@ -38,20 +59,17 @@ const drawWave = (
 
   const colorPrimary = p.color("#d25084");
   const colorSecondary = p.color("#e2ca5f");
-  colorPrimary.setAlpha(15);
-  colorSecondary.setAlpha(20);
 
   p.push();
-  p.rotateX(Math.PI / 4)
   let radInc = 18,
-    sphereCount = 6,
+    sphereCount = 4,
     minRadius = radius - radInc * sphereCount,
     even = false;
   for(let r = radius; r > minRadius; r -= radInc) {
     drawSphere(
       {
         r, 
-        detail: 2 * (r / 5.8), 
+        detail: 2 * (r / 0.6), 
         color: even ? colorPrimary : colorSecondary});
     even = !even;
   }
@@ -59,34 +77,16 @@ const drawWave = (
 };
 
 const drawWaves = () => {
-  const radius = 80,
-    waveDim = 10;
-  
-  p.push();
-  p.translate(-window.innerWidth / 2, -window.innerHeight / 2);
-  p.translate(-380, -430, -200);
-  p.rotateX(Math.PI / 8);
+  p.translate(-window.innerWidth / 2, 0);
 
-  let even = true;
+  const waveCount = 3;
 
-  for(
-    let i = -radius; i < radius * waveDim * 2; i += radius) {
+  p.translate(window.innerWidth / (waveCount * 2), 0);
 
-    for(
-      let j = even ? 0 : -radius; 
-      j < radius * waveDim * 2; 
-      j += radius * 2) {
-
-      p.push();
-      p.translate(j, i);
-      drawWave({radius: radius * 1.4});
-      p.pop();
-    }
-
-    even = !even;
+  for(let i = 0; i < waveCount; ++i) {
+    drawWave({radius: 70});
+    p.translate(window.innerWidth / waveCount, 0);
   }
-
-  p.pop();
 };
 
 const app = () => {
@@ -94,12 +94,11 @@ const app = () => {
 
   p.setup = () => {
     p.createCanvas(window.innerWidth, window.innerHeight, p.WEBGL);
-    p.background("gray");
+    p.background("black");
     p.noLoop();
   };
 
   p.draw = () => {
-    p.translate(0, 0, -700);
     drawWaves();
   };
 
